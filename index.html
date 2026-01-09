@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Project O：深层潜意识心理画像</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        /* --- 全局视觉系统 (Dark Aurora Theme) --- */
+        :root {
+            --bg-dark: #0f0c29;
+            --bg-gradient: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            --card-glass: rgba(255, 255, 255, 0.08);
+            --text-main: #ffffff;
+            --text-sub: #aab2bd;
+            --accent-purple: #7b4397;
+            --accent-pink: #dc2430;
+            --spectrum-grad: linear-gradient(90deg, #4a90e2 0%, #dcb0ff 50%, #ff5e62 100%);
+        }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        
+        body {
+            margin: 0; padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+        }
+
+        #app {
+            width: 100%;
+            max-width: 480px;
+            min-height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* --- 动画类 --- */
+        .hidden { display: none !important; }
+        .fade-in { animation: fadeIn 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* --- 通用组件 --- */
+        .btn {
+            background: linear-gradient(135deg, #dc2430, #7b4397);
+            border: none;
+            color: white;
+            padding: 18px;
+            font-size: 17px;
+            font-weight: 600;
+            border-radius: 50px;
+            width: 100%;
+            cursor: pointer;
+            box-shadow: 0 8px 20px rgba(123, 67, 151, 0.4);
+            transition: transform 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn::after {
+            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(255,255,255,0.2), transparent);
+            opacity: 0; transition: opacity 0.2s;
+        }
+        .btn:active { transform: scale(0.98); }
+        .btn:active::after { opacity: 1; }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: rgba(255,255,255,0.8);
+            padding: 14px;
+            border-radius: 50px;
+            font-size: 15px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        /* --- 1. 首页 Landing --- */
+        .landing-wrap {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 40px; text-align: center;
+        }
+        .brand-logo {
+            width: 100px; height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(from 180deg at 50% 50%, #0f0c29 0deg, #302b63 180deg, #24243e 360deg);
+            box-shadow: 0 0 40px rgba(123, 67, 151, 0.5);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; font-weight: 900; color: #dcb0ff;
+            margin-bottom: 30px; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .landing-title { font-size: 28px; font-weight: 800; margin-bottom: 12px; letter-spacing: 1px; }
+        .landing-sub { font-size: 13px; color: var(--text-sub); margin-bottom: 50px; line-height: 1.6; }
+        
+        .gender-selector {
+            display: flex; gap: 15px; width: 100%; margin-bottom: 40px;
+        }
+        .g-btn {
+            flex: 1; padding: 15px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 16px;
+            color: var(--text-sub);
+            transition: all 0.3s;
+        }
+        .g-btn.active {
+            background: var(--accent-purple);
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 5px 15px rgba(123, 67, 151, 0.3);
+        }
+
+        /* --- 2. 答题页 Quiz --- */
+        .quiz-wrap { padding: 20px; flex: 1; display: flex; flex-direction: column; }
+        .progress-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 30px; padding: 0 10px;
+        }
+        .p-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.1); margin: 0 15px; border-radius: 2px; }
+        .p-bar-fill { height: 100%; background: var(--accent-pink); width: 0%; transition: width 0.4s ease; border-radius: 2px; }
+        
+        .question-card {
+            background: var(--card-glass);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 30px 25px;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .q-title { font-size: 20px; font-weight: 600; line-height: 1.5; margin-bottom: 5px; }
+        
+        .options-grid { display: flex; flex-direction: column; gap: 12px; }
+        .opt-btn {
+            background: rgba(255,255,255,0.05);
+            padding: 18px 20px;
+            border-radius: 16px;
+            text-align: left;
+            font-size: 16px;
+            color: rgba(255,255,255,0.9);
+            transition: background 0.2s;
+            display: flex; align-items: center;
+        }
+        .opt-btn:active { background: rgba(255,255,255,0.15); transform: scale(0.99); }
+
+        /* 图片题样式 */
+        .img-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .img-opt {
+            background: rgba(255,255,255,0.05); border-radius: 16px;
+            overflow: hidden; cursor: pointer;
+        }
+        .img-placeholder {
+            height: 110px; width: 100%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 24px; color: rgba(255,255,255,0.3);
+        }
+        .img-label { padding: 12px; font-size: 13px; text-align: center; color: rgba(255,255,255,0.8); }
+
+        /* --- 3. Loading --- */
+        .loading-wrap {
+            flex: 1; display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .brain-loader {
+            width: 80px; height: 80px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: var(--accent-purple);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin-bottom: 25px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- 4. 结果页 Result --- */
+        .result-wrap { width: 100%; background: #0f0c29; } /* 截图背景 */
+        
+        .report-card {
+            background: #151230; /* 略亮一点的背景以便区分 */
+            padding: 0; 
+            min-height: 100vh;
+        }
+        
+        /* 模块 A: 海报区 */
+        .res-poster {
+            padding: 40px 30px;
+            background: radial-gradient(circle at top right, #302b63 0%, #151230 60%);
+            position: relative;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .user-badge {
+            font-size: 12px; color: var(--accent-purple); 
+            border: 1px solid var(--accent-purple);
+            padding: 4px 10px; border-radius: 20px;
+            display: inline-block; margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        .res-title {
+            font-size: 34px; font-weight: 800; line-height: 1.2;
+            background: linear-gradient(to right, #fff, #dcb0ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+        .res-tags { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
+        .res-tag { 
+            font-size: 12px; color: rgba(255,255,255,0.8); 
+            background: rgba(255,255,255,0.1); 
+            padding: 5px 12px; border-radius: 6px; 
+        }
+        
+        .radar-box {
+            background: rgba(0,0,0,0.2);
+            padding: 15px; border-radius: 12px;
+            margin-bottom: 25px;
+        }
+        .stat-row { display: flex; align-items: center; margin-bottom: 8px; }
+        .stat-label { font-size: 12px; color: var(--text-sub); width: 60px; }
+        .stat-track { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+        .stat-val { height: 100%; background: var(--text-main); border-radius: 3px; }
+
+        .res-quote {
+            font-size: 18px; font-style: italic; color: #fff;
+            line-height: 1.6; opacity: 0.9;
+            border-left: 3px solid var(--accent-pink);
+            padding-left: 15px;
+        }
+
+        /* 模块 B: 硬核诊断 */
+        .res-diagnosis { padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .sec-title { font-size: 14px; color: var(--text-sub); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 1px; }
+        .diag-result { font-size: 24px; font-weight: 700; color: #dcb0ff; margin-bottom: 15px; }
+        
+        .spectrum-bar {
+            height: 12px; width: 100%;
+            background: var(--spectrum-grad);
+            border-radius: 6px; position: relative;
+            margin: 20px 0 10px 0;
+        }
+        .spectrum-dot {
+            width: 18px; height: 18px; background: #fff;
+            border: 3px solid #151230; border-radius: 50%;
+            position: absolute; top: 50%; transform: translate(-50%, -50%);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        .spectrum-labels { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-sub); }
+
+        /* 模块 C: 身心分析 */
+        .res-deep { padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .deep-text { font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.85); text-align: justify; }
+
+        /* 模块 D: CP建议 */
+        .res-cp { padding: 30px; padding-bottom: 50px; background: rgba(0,0,0,0.2); }
+        .cp-box { 
+            border: 1px dashed rgba(255,255,255,0.2); 
+            border-radius: 12px; padding: 20px; 
+            text-align: center;
+        }
+        .cp-name { color: var(--accent-pink); font-weight: 700; font-size: 18px; margin: 5px 0; }
+        .qr-placeholder { 
+            margin-top: 30px; display: flex; justify-content: center; align-items: center; gap: 10px; opacity: 0.6; 
+        }
+
+        /* 操作区 */
+        .action-bar {
+            padding: 20px 30px 40px 30px;
+            display: flex; flex-direction: column; gap: 15px;
+            background: #0f0c29;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="app">
+    
+    <div id="landing" class="landing-wrap fade-in">
+        <div class="brand-logo">O</div>
+        <div class="landing-title">Project O</div>
+        <div class="landing-sub">潜意识心理性别 · 情感光谱实验室<br>基于 Klein 栅格与 BSRI 模型改良</div>
+        
+        <div style="text-align: left; width: 100%; margin-bottom: 15px; font-size: 14px; color: #aab2bd;">第一步：建立潜意识基准</div>
+        <div class="gender-selector">
+            <div class="g-btn" id="g-female" onclick="setGender('female')">我是女性</div>
+            <div class="g-btn" id="g-male" onclick="setGender('male')">我是男性</div>
+        </div>
+
+        <button class="btn" onclick="startTest()">开始潜入潜意识</button>
+        <div style="margin-top: 20px; font-size: 12px; color: #666;">已有 12,490 人参与测试</div>
+    </div>
+
+    <div id="quiz" class="quiz-wrap hidden">
+        <div class="progress-header">
+            <span style="font-size: 12px; color: var(--text-sub)">LAB REPORT</span>
+            <div class="p-bar-bg"><div class="p-bar-fill" id="progress"></div></div>
+            <span style="font-size: 12px;" id="q-index">1/18</span>
+        </div>
+
+        <div id="q-container" class="slide-up">
+            </div>
+    </div>
+
+    <div id="loading" class="loading-wrap hidden">
+        <div class="brain-loader"></div>
+        <div style="font-size: 14px; color: var(--accent-purple);" id="load-text">正在连接神经元...</div>
+    </div>
+
+    <div id="result" class="hidden">
+        <div id="capture-area" class="report-card">
+            
+            <div class="res-poster">
+                <div class="user-badge" id="res-badge">TEST NO.89757</div>
+                <div class="res-title" id="res-title">正在生成...</div>
+                <div class="res-tags" id="res-tags"></div>
+                
+                <div class="radar-box">
+                    <div class="stat-row">
+                        <div class="stat-label">理性 M</div>
+                        <div class="stat-track"><div class="stat-val" id="bar-m" style="width: 50%; background: #4a90e2"></div></div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">感性 F</div>
+                        <div class="stat-track"><div class="stat-val" id="bar-f" style="width: 50%; background: #ff5e62"></div></div>
+                    </div>
+                    <div class="stat-row">
+                        <div class="stat-label">本能 Body</div>
+                        <div class="stat-track"><div class="stat-val" id="bar-body" style="width: 50%; background: #dcb0ff"></div></div>
+                    </div>
+                </div>
+
+                <div class="res-quote" id="res-quote">“金句加载中...”</div>
+            </div>
+
+            <div class="res-diagnosis">
+                <div class="sec-title">/// CLINICAL DIAGNOSIS</div>
+                <div class="diag-result" id="diag-main">双性恋 / 流动光谱倾向</div>
+                
+                <div class="spectrum-bar">
+                    <div class="spectrum-dot" id="spec-dot" style="left: 50%"></div>
+                </div>
+                <div class="spectrum-labels">
+                    <span>异性恋 (Hetero)</span>
+                    <span>同性恋 (Homo)</span>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: var(--text-sub);">
+                    *你的光谱落点击败了 92% 的纯直/纯弯人群
+                </div>
+            </div>
+
+            <div class="res-deep">
+                <div class="sec-title">/// DEEP ANALYSIS (Body vs Mind)</div>
+                <div class="deep-text" id="res-analysis">
+                    解析文案加载中...
+                </div>
+            </div>
+
+            <div class="res-cp">
+                <div class="sec-title" style="text-align: center">/// SOUL MATCH</div>
+                <div class="cp-box">
+                    你的天命 CP 类型是
+                    <div class="cp-name" id="cp-target">【极致共情者】</div>
+                    <div style="font-size: 12px; margin-top: 5px;">匹配指数：98.5%</div>
+                </div>
+                
+                <div class="qr-placeholder">
+                    <div style="width: 40px; height: 40px; background: white; padding: 2px;"></div>
+                    <div style="font-size: 10px; text-align: left;">Project O<br>扫码进入潜意识实验室</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn" onclick="saveImage()">保存完整报告卡</button>
+            <button class="btn-outline" onclick="copyText()">复制评论寻找同类</button>
+            <button class="btn-outline" style="border: none; opacity: 0.6; font-size: 13px;" onclick="restartTest()">↺ 重新测试</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- 核心变量 ---
+    let gender = null;
+    let currentIdx = 0;
+    
+    // 计分池
+    let scores = {
+        M: 0, F: 0, 
+        Body_D: 0, Body_S: 0, 
+        Mind_D: 0, Mind_S: 0, 
+        A: 0
+    };
+
+    // 18题完整题库 (已配置好变量)
+    const questions = [
+        // Module A (Q1-Q10) 心理性别
+        {
+            t: "Q1. 面对突发危机（如赶飞机快迟到了），你的第一生理反应是？",
+            opts: [
+                { txt: "A. 战斗模式：肾上腺素飙升，立刻计算最优路线。", s: {M:2} },
+                { txt: "B. 焦虑模式：心跳加速，非常慌张，甚至想哭或放弃。", s: {F:2} },
+                { txt: "C. 依赖模式：立刻打电话给同伴或求助，询问该怎么办。", s: {F:1} },
+                { txt: "D. 抽离模式：心里很急，但表面出奇冷静，机械执行。", s: {M:1} }
+            ]
+        },
+        {
+            t: "Q2. 看一部虐心的悲剧电影，当主角去世时，你的状态通常是？",
+            opts: [
+                { txt: "A. 完全沉浸：眼泪止不住，甚至结束后半小时还在悲伤中。", s: {F:2} },
+                { txt: "B. 审视视角：内心有波动，但很少流泪，更多在思考剧情逻辑。", s: {M:2} },
+                { txt: "C. 情绪共振：眼眶湿润，但能迅速抽离，不会影响后续心情。", s: {F:1} }
+            ]
+        },
+        {
+            t: "Q3. 在一段亲密关系中，让你感到“最舒适”的相处模式是？",
+            opts: [
+                { txt: "A. 慕强型：对方比我强，能引领我，替我做主。", s: {F:2} },
+                { txt: "B. 掌控型：我喜欢安排一切，对方最好听我的建议。", s: {M:2} },
+                { txt: "C. 伙伴型：势均力敌，谁有道理听谁的，互相独立。", s: {M:1} },
+                { txt: "D. 粘人型：无时无刻不在一起，分享所有细微情绪。", s: {F:1} }
+            ]
+        },
+        {
+            t: "Q4. 如果必须用一种动物来形容你的灵魂底色，你会选择？",
+            opts: [
+                { txt: "A. 猫：敏感、独立、傲娇、以自我感受为中心。", s: {F:1} },
+                { txt: "B. 狼：冷峻、秩序、目标感强、忠诚于群体。", s: {M:2} },
+                { txt: "C. 鹿：温和、灵动、容易受惊、需要安全感。", s: {F:2} },
+                { txt: "D. 鹰：自由、孤独、俯视视角、不被束缚。", s: {M:1} }
+            ]
+        },
+        {
+            t: "Q5. 当朋友向你倾诉一堆负能量和烦恼时，你内心的真实弹幕是？",
+            opts: [
+                { txt: "A. 感同身受：“天啊太惨了”，恨不得替TA去出气。", s: {F:2} },
+                { txt: "B. 解决问题：“别哭了，只要做这三件事就能解决。”", s: {M:2} },
+                { txt: "C. 分析原因：“为什么这事会发生？是不是你也有问题？”", s: {M:1} },
+                { txt: "D. 提供陪伴：不知道说什么，但会静静陪着TA。", s: {F:1} }
+            ]
+        },
+        {
+            t: "Q6. 关于“竞争”和“输赢”，你的潜意识态度是？",
+            opts: [
+                { txt: "A. 享受赢：我喜欢赢的感觉，竞争让我兴奋。", s: {M:2} },
+                { txt: "B. 讨厌输：我未必想赢，但我绝不能输给讨厌的人。", s: {M:1} },
+                { txt: "C. 和谐派：大家开心就好，我不喜欢火药味。", s: {F:1} },
+                { txt: "D. 回避派：一旦有竞争压力，我就想退出或躺平。", s: {F:2} }
+            ]
+        },
+        {
+            t: "Q7. 在团队合作中，你通常扮演的角色是？",
+            opts: [
+                { txt: "A. 领导者：定目标、分任务、控进度。", s: {M:2} },
+                { txt: "B. 粘合剂：调节气氛、关注大家开不开心、化解矛盾。", s: {F:2} },
+                { txt: "C. 执行者：别让我做决定，告诉我做什么就行。", s: {M:1} },
+                { txt: "D. 智囊团：提供冷僻的思路，但不负责具体实施。", s: {M:1} }
+            ]
+        },
+        {
+            t: "Q8. (直觉题) 装修自己的独居小屋，这四种风格你直觉选哪个？",
+            type: "img",
+            opts: [
+                { txt: "工业冷感<br>黑白灰/金属", col: "#555", s: {M:2} },
+                { txt: "法式奶油<br>暖色/蕾丝", col: "#f5e6d3", s: {F:2} },
+                { txt: "日式原木<br>极简/自然", col: "#d4c5b0", s: {M:1} },
+                { txt: "复古浓烈<br>红丝绒/神秘", col: "#722f37", s: {F:1} }
+            ]
+        },
+        {
+            t: "Q9. 如果有人公然挑衅或冒犯了你，你会？",
+            opts: [
+                { txt: "A. 当场反击：绝不内耗，有仇当场报，怼回去。", s: {M:2} },
+                { txt: "B. 事后反刍：当时愣住了，回家越想越气，甚至气哭。", s: {F:2} },
+                { txt: "C. 冷漠无视：觉得对方是傻X，不值得浪费情绪。", s: {M:1} },
+                { txt: "D. 委婉化解：试图用玩笑或讲道理来缓和局面。", s: {F:1} }
+            ]
+        },
+        {
+            t: "Q10. 回忆童年，你更喜欢的玩具或游戏类型是？",
+            opts: [
+                { txt: "A. 构建类：积木、拆装东西、策略游戏。", s: {M:2} },
+                { txt: "B. 角色类：过家家、洋娃娃、扮演老师/医生。", s: {F:2} },
+                { txt: "C. 竞技类：赛跑、打球、对战游戏。", s: {M:1} },
+                { txt: "D. 幻想类：发呆、画画、自己编故事。", s: {F:1} }
+            ]
+        },
+        // Module B (Q11-Q18) 情感光谱 (Body vs Mind)
+        {
+            t: "Q11. 刷短视频时，大数据给你推荐哪种内容你最容易点赞？",
+            type: "img",
+            opts: [
+                { txt: "帅气异性<br>西装杀/荷尔蒙", col: "#2c3e50", s: {Body_D:2} },
+                { txt: "绝美同性<br>御姐/天菜", col: "#8e44ad", s: {Body_S:2} },
+                { txt: "嗑CP<br>氛围感/好甜", col: "#e74c3c", s: {Body_S:1, Body_D:1} },
+                { txt: "非人类<br>萌宠/风景", col: "#27ae60", s: {A:2} }
+            ]
+        },
+        {
+            t: "Q12. 关于“身体接触”，你的真实边界感是？",
+            opts: [
+                { txt: "A. 排斥同性：同性朋友挽手或靠太近，我会下意识躲开。", s: {Body_D:2} },
+                { txt: "B. 排斥异性：异性稍微靠近一点，我就觉得生理性不适。", s: {Body_S:2} },
+                { txt: "C. 看颜值：只要长得好看/味道好闻，男女我都不排斥。", s: {Body_S:2, Body_D:2} },
+                { txt: "D. 都排斥：不论男女，谁碰我我都觉得别扭。", s: {A:2} }
+            ]
+        },
+        {
+            t: "Q13. 在你的春梦或极度私密的幻想中，主角的模糊轮廓通常是？",
+            opts: [
+                { txt: "A. 清晰的异性。", s: {Body_D:2} },
+                { txt: "B. 清晰的同性。", s: {Body_S:2} },
+                { txt: "C. 不分性别的抽象体，或者只是某种情绪/氛围。", s: {Body_S:1, Body_D:1} },
+                { txt: "D. 几乎没有这类幻想。", s: {A:2} }
+            ]
+        },
+        {
+            t: "Q14. 看到一个非常有魅力、气场强大的同性，你的第一反应是？",
+            opts: [
+                { txt: "A. 慕强/嫉妒：我想成为TA，想拥有TA的身材衣品。", s: {Body_D:1} },
+                { txt: "B. 心动/渴望：我想认识TA，想被TA关注，甚至有点脸红。", s: {Body_S:2} },
+                { txt: "C. 欣赏：单纯觉得好看，像看一幅画。", s: {A:1} }
+            ]
+        },
+        {
+            t: "Q15. 你怎么看待“同性恋”或“双性恋”话题？",
+            opts: [
+                { txt: "A. 完全无关：那是别人的事，我非常确定自己是直的。", s: {Mind_D:2} },
+                { txt: "B. 自我怀疑：有时候会想，如果我也遇到对的人，会不会弯？", s: {Mind_S:1, Mind_D:1} },
+                { txt: "C. 深度共鸣：我觉得性别只是标签，爱就是爱。", s: {Mind_S:2} },
+                { txt: "D. 毫无兴趣：不太关注感情方面的话题。", s: {A:1} }
+            ]
+        },
+        {
+            t: "Q16. 假如这辈子你注定无法结婚，你更愿意选择哪种生活？",
+            opts: [
+                { txt: "A. 独身贵族：一个人住大房子，养猫狗，自由自在。", s: {A:2} },
+                { txt: "B. 同性密友：和一个最好的同性朋友同居养老，相伴一生。", s: {Mind_S:2} },
+                { txt: "C. 开放关系：不结婚，但保持有很多异性伴侣/约会对象。", s: {Mind_D:2} }
+            ]
+        },
+        {
+            t: "Q17. 所谓的“Crush”（短暂的迷恋/上头），在你的经历中？",
+            opts: [
+                { txt: "A. 只发生在他的异性身上。", s: {Mind_D:2} },
+                { txt: "B. 有异性，但也曾对同性有过类似的感觉。", s: {Mind_S:2} },
+                { txt: "C. 我很难对现实中的人心动，我更爱纸片人/虚拟角色。", s: {A:2} }
+            ]
+        },
+        {
+            t: "Q18. (终极题) 如果此时必须和一个同性接吻（哪怕是大冒险），你的生理预判是？",
+            opts: [
+                { txt: "A. 恶心：绝对不行，想想就起鸡皮疙瘩。", s: {Body_D:2} },
+                { txt: "B. 尴尬：硬着头皮也能亲，但没啥感觉。", s: {Body_D:1} },
+                { txt: "C. 好奇：其实……有点想试试，如果不讨厌的话。", s: {Body_S:2} },
+                { txt: "D. 期待：如果是喜欢的类型，完全没问题。", s: {Body_S:3} }
+            ]
+        }
+    ];
+
+    // --- 交互逻辑 ---
+
+    function setGender(g) {
+        gender = g;
+        document.getElementById('g-female').classList.toggle('active', g === 'female');
+        document.getElementById('g-male').classList.toggle('active', g === 'male');
+    }
+
+    function startTest() {
+        if (!gender) return alert('请先选择生理性别（这会影响结果准确性）');
+        document.getElementById('landing').classList.add('hidden');
+        document.getElementById('quiz').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        const q = questions[currentIdx];
+        const container = document.getElementById('q-container');
+        
+        // 更新进度条
+        document.getElementById('progress').style.width = ((currentIdx + 1) / questions.length * 100) + '%';
+        document.getElementById('q-index').innerText = (currentIdx + 1) + '/' + questions.length;
+
+        // 生成HTML
+        let html = `<div class="question-card fade-in">
+            <div class="q-title">${q.t}</div>
+        </div>`;
+        
+        if (q.type === 'img') {
+            html += `<div class="img-grid slide-up">`;
+            q.opts.forEach(o => {
+                html += `<div class="img-opt" onclick='answer(${JSON.stringify(o.s)})'>
+                    <div class="img-placeholder" style="background:${o.col}">IMG</div>
+                    <div class="img-label">${o.txt}</div>
+                </div>`;
+            });
+            html += `</div>`;
+        } else {
+            html += `<div class="options-grid slide-up">`;
+            q.opts.forEach(o => {
+                html += `<div class="opt-btn" onclick='answer(${JSON.stringify(o.s)})'>${o.txt}</div>`;
+            });
+            html += `</div>`;
+        }
+        
+        container.innerHTML = html;
+    }
+
+    function answer(points) {
+        // 累加分数
+        for (let k in points) {
+            if (scores.hasOwnProperty(k)) scores[k] += points[k];
+        }
+
+        currentIdx++;
+        if (currentIdx < questions.length) {
+            setTimeout(renderQuestion, 200);
+        } else {
+            finishTest();
+        }
+    }
+
+    function finishTest() {
+        document.getElementById('quiz').classList.add('hidden');
+        document.getElementById('loading').classList.remove('hidden');
+        
+        // 模拟计算
+        const texts = ["正在构建神经元模型...", "正在解析潜意识投射...", "比对 Klein 栅格数据...", "生成最终画像..."];
+        let step = 0;
+        let timer = setInterval(() => {
+            document.getElementById('load-text').innerText = texts[step];
+            step++;
+            if (step >= texts.length) {
+                clearInterval(timer);
+                generateResult();
+            }
+        }, 800);
+    }
+
+    // --- 核心算法 ---
+    function generateResult() {
+        document.getElementById('loading').classList.add('hidden');
+        document.getElementById('result').classList.remove('hidden');
+
+        // 1. 心理性别计算
+        const M = scores.M;
+        const F = scores.F;
+        const diffX = Math.abs(M - F);
+        
+        // 2. 情感光谱计算 (Total)
+        const total_D = scores.Body_D + scores.Mind_D;
+        const total_S = scores.Body_S + scores.Mind_S;
+        const A = scores.A;
+        
+        // 计算光谱落点 (0=直, 100=弯)
+        let spectrumPos = 50;
+        if (total_D + total_S > 0) {
+            spectrumPos = (total_S / (total_D + total_S)) * 100;
+        }
+
+        // 3. 诊断结论
+        let diagText = "";
+        let cpText = "";
+        
+        if (A > total_S && A > total_D) {
+            diagText = "智性恋 / 独身主义 (Ace)";
+            spectrumPos = 50; // 居中
+            cpText = "【高维观察者】";
+        } else if (spectrumPos < 20) {
+            diagText = "异性恋倾向 (Hetero)";
+            cpText = gender === 'female' ? "【绝对理性者】" : "【极致共情者】";
+        } else if (spectrumPos > 80) {
+            diagText = "同性恋倾向 (Homo)";
+            cpText = "【灵魂共振者】";
+        } else {
+            diagText = "双性恋 / 流动光谱 (Bi/Fluid)";
+            cpText = "【双性化灵魂】";
+        }
+
+        // 4. 身心分层解析 (Body vs Mind)
+        let analysisText = "";
+        const bodyTrend = scores.Body_S > scores.Body_D ? "S" : "D";
+        const mindTrend = scores.Mind_S > scores.Mind_D ? "S" : "D";
+
+        if (bodyTrend === mindTrend) {
+            analysisText = "你的<span style='color:#dcb0ff'>身体本能</span>与<span style='color:#dcb0ff'>社会化认知</span>高度统一。这是一种非常幸运的状态，意味着你在情感选择上很少会有内耗，你非常清楚自己想要什么，并且能够坦然地拥抱自己的欲望。";
+        } else if (bodyTrend === "S" && mindTrend === "D") {
+            analysisText = "⚠️ <b>检测到“身心分离”信号</b>：你的身体很诚实（潜意识对同性更有冲动），但你的理智在压抑这种感觉（试图维持异性恋的社会身份）。这种拉扯感是你迷茫的根源，你可能需要面对真实的自我，而不是活在别人的期待里。";
+        } else {
+            analysisText = "你的情感模式呈现出复杂的<b>“劈叉”状态</b>。你可能对同性有着审美的向往（精神上的亲近），但在生理底线上依然忠诚于异性。这说明你更多是被灵魂吸引，而非单纯的性别。";
+        }
+
+        // 5. 匹配海报文案
+        let tpl = {};
+        if (diffX <= 3) {
+            tpl = {
+                title: "雌雄同体的<br>秩序守护者",
+                tags: "#顶级魅力 #刚柔并济",
+                quote: "“既有骑士的剑，也有公主的梦，你是自己最好的千军万马。”"
+            };
+        } else if (M > F) {
+            tpl = {
+                title: "绝对理性的<br>逻辑构建师",
+                tags: "#直线思维 #安全感天花板",
+                quote: "“你的温柔不仅是玫瑰，更是为你挡风遮雨的盾牌。”"
+            };
+        } else {
+            tpl = {
+                title: "月光揉碎的<br>极致共情者",
+                tags: "#高敏感天赋 #氛围感",
+                quote: "“爱是灵魂的共振，而不是性别的对号入座。”"
+            };
+        }
+
+        // 6. 渲染到 DOM
+        document.getElementById('res-title').innerHTML = tpl.title;
+        document.getElementById('res-tags').innerText = tpl.tags;
+        document.getElementById('res-quote').innerText = tpl.quote;
+        document.getElementById('diag-main').innerText = diagText;
+        document.getElementById('spec-dot').style.left = spectrumPos + '%';
+        document.getElementById('res-analysis').innerHTML = analysisText;
+        document.getElementById('cp-target').innerText = cpText;
+        
+        // 渲染条形图
+        let total = M + F + 0.1;
+        document.getElementById('bar-m').style.width = (M/total*100) + '%';
+        document.getElementById('bar-f').style.width = (F/total*100) + '%';
+        let bodyPct = (scores.Body_S + scores.Body_D) > 0 ? (scores.Body_S / (scores.Body_S + scores.Body_D) * 100) : 50;
+        document.getElementById('bar-body').style.width = bodyPct + '%';
+    }
+
+    // --- 功能函数 ---
+    function saveImage() {
+        const area = document.getElementById('capture-area');
+        html2canvas(area, {
+            scale: 2,
+            backgroundColor: "#151230",
+            useCORS: true
+        }).then(canvas => {
+            const link = document.createElement('a');
+            link.download = 'Project_O_Report.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+
+    function copyText() {
+        const t = `Project O 测评结果：${document.getElementById('diag-main').innerText}，我是${document.getElementById('res-title').innerText.replace('<br>','')}。#心理测试`;
+        navigator.clipboard.writeText(t).then(() => alert('文案已复制，快去发笔记吧！'));
+    }
+
+    function restartTest() {
+        // 重置数据
+        currentIdx = 0;
+        scores = {M:0, F:0, Body_D:0, Body_S:0, Mind_D:0, Mind_S:0, A:0};
+        document.getElementById('result').classList.add('hidden');
+        document.getElementById('landing').classList.remove('hidden');
+    }
+
+</script>
+</body>
+</html>
